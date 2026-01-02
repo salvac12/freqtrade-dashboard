@@ -8,9 +8,16 @@ export default async function handler(req, res) {
   
   // Validar que las variables de entorno estén configuradas
   if (!VPS_IP || !USERNAME || !PASSWORD) {
+    console.error('Variables de entorno faltantes:', { VPS_IP: !!VPS_IP, USERNAME: !!USERNAME, PASSWORD: !!PASSWORD });
     return res.status(500).json({ 
-      error: 'Variables de entorno no configuradas. Configura VPS_IP, FREQTRADE_USERNAME y FREQTRADE_PASSWORD en Vercel.' 
+      error: 'Variables de entorno no configuradas. Configura VPS_IP, FREQTRADE_USERNAME y FREQTRADE_PASSWORD en Vercel.',
+      debug: { hasVPS_IP: !!VPS_IP, hasUSERNAME: !!USERNAME, hasPASSWORD: !!PASSWORD }
     });
+  }
+  
+  // Log de depuración (solo en desarrollo)
+  if (process.env.VERCEL_ENV === 'development') {
+    console.log('Variables de entorno:', { VPS_IP, USERNAME: USERNAME ? '***' : 'missing', PASSWORD: PASSWORD ? '***' : 'missing' });
   }
   
   const bots = [
@@ -27,7 +34,10 @@ export default async function handler(req, res) {
         const baseUrl = `http://${VPS_IP}:${bot.port}`;
         
         // Obtener token - usar autenticación básica HTTP
-        const authString = Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64');
+        // Asegurarse de que USERNAME y PASSWORD no tengan espacios
+        const cleanUsername = (USERNAME || '').trim();
+        const cleanPassword = (PASSWORD || '').trim();
+        const authString = Buffer.from(`${cleanUsername}:${cleanPassword}`).toString('base64');
         
         let authResponse;
         try {
@@ -45,6 +55,7 @@ export default async function handler(req, res) {
 
         if (!authResponse.ok) {
           const errorText = await authResponse.text().catch(() => '');
+          console.error(`Auth error for ${bot.name}:`, authResponse.status, errorText);
           throw new Error(`Error de autenticación: ${authResponse.status} - ${errorText.substring(0, 100)}`);
         }
 
