@@ -127,7 +127,7 @@ export default async function handler(req, res) {
         return {
           bot: bot.name,
           exchange: bot.exchange,
-          status: status.state || 'unknown',
+          status: botState,
           trades: {
             total: tradesList.length,
             open: openTrades.length,
