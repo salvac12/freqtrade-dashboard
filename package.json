@@ -1,0 +1,10 @@
+{
+  "name": "freqtrade-dashboard",
+  "version": "1.0.0",
+  "description": "Dashboard web para monitoreo de bots Freqtrade",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {}
+}
+
