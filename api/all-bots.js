@@ -26,7 +26,9 @@ export default async function handler(req, res) {
     { name: "Supertrend", exchange: "OKX", port: 8082 },
     { name: "Strategy005", exchange: "Binance", port: 8083 },
     { name: "CombinedBinHAndCluc", exchange: "Binance", port: 8084 },
-    { name: "Diamond", exchange: "Binance", port: 8085 }
+    { name: "Diamond", exchange: "Binance", port: 8085 },
+    { name: "E0V1E", exchange: "Binance", port: 8086 },
+    { name: "MultiMA_TSL3", exchange: "Binance", port: 8087 }
   ];
 
   try {
