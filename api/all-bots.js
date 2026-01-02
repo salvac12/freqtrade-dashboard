@@ -82,13 +82,31 @@ export default async function handler(req, res) {
           throw new Error('Error obteniendo datos del bot');
         }
 
-        const trades = await tradesResponse.json();
-        const status = await statusResponse.json();
+        let tradesData, statusData;
+        try {
+          tradesData = await tradesResponse.json();
+          statusData = await statusResponse.json();
+        } catch (parseError) {
+          throw new Error(`Error parseando respuesta: ${parseError.message}`);
+        }
 
-        // Procesar datos
-        const tradesList = Array.isArray(trades) ? trades : (trades.trades || []);
-        const openTrades = tradesList.filter(t => t.is_open);
-        const closedTrades = tradesList.filter(t => !t.is_open);
+        // Procesar datos de trades
+        const tradesList = Array.isArray(tradesData) ? tradesData : (tradesData.trades || []);
+        const openTrades = tradesList.filter(t => t && t.is_open);
+        const closedTrades = tradesList.filter(t => t && !t.is_open);
+        
+        // Obtener estado del bot - el endpoint /status puede devolver un array vacío
+        // En ese caso, asumimos que el bot está corriendo si podemos obtener datos
+        let botState = 'unknown';
+        if (Array.isArray(statusData)) {
+          // Si es un array vacío, el bot probablemente está corriendo
+          botState = statusData.length > 0 ? (statusData[0]?.state || 'running') : 'running';
+        } else if (typeof statusData === 'object' && statusData !== null) {
+          botState = statusData.state || statusData.bot_state || statusData.status || 'running';
+        } else {
+          // Si no podemos determinar el estado, asumimos que está corriendo si hay datos
+          botState = 'running';
+        }
 
         const totalProfit = closedTrades.reduce((sum, t) => sum + (t.profit_abs || 0), 0);
         const totalProfitPct = closedTrades.reduce((sum, t) => sum + (t.profit_pct || 0), 0);
@@ -127,7 +145,7 @@ export default async function handler(req, res) {
         return {
           bot: bot.name,
           exchange: bot.exchange,
-          status: botState,
+          status: botState === 'unknown' ? 'running' : botState,
           trades: {
             total: tradesList.length,
             open: openTrades.length,
