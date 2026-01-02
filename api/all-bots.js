@@ -24,7 +24,9 @@ export default async function handler(req, res) {
     { name: "BollingerV1", exchange: "Kraken", port: 8080 },
     { name: "NFI X5", exchange: "Binance", port: 8081 },
     { name: "Supertrend", exchange: "OKX", port: 8082 },
-    { name: "Strategy005", exchange: "Binance", port: 8083 }
+    { name: "Strategy005", exchange: "Binance", port: 8083 },
+    { name: "CombinedBinHAndCluc", exchange: "Binance", port: 8084 },
+    { name: "Diamond", exchange: "Binance", port: 8085 }
   ];
 
   try {
