@@ -25,14 +25,25 @@ export default async function handler(req, res) {
         const baseUrl = `http://${VPS_IP}:${bot.port}`;
         
         // Obtener token - usar autenticación básica HTTP
+        // Nota: fetch en Node.js de Vercel puede necesitar node-fetch o usar el formato correcto
         const authString = Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64');
-        const authResponse = await fetch(`${baseUrl}/api/v1/token/login`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${authString}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        
+        let authResponse;
+        try {
+          authResponse = await fetch(`${baseUrl}/api/v1/token/login`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${authString}`,
+              'Content-Type': 'application/json',
+              'User-Agent': 'Freqtrade-Dashboard/1.0'
+            },
+            // Añadir timeout explícito
+            signal: AbortSignal.timeout(10000)
+          });
+        } catch (fetchError) {
+          // Si fetch falla, puede ser un problema de red o timeout
+          throw new Error(`Error de conexión: ${fetchError.message}`);
+        }
 
         if (!authResponse.ok) {
           throw new Error(`Error de autenticación: ${authResponse.status}`);
