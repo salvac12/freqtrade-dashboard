@@ -398,11 +398,19 @@
                     currency,
                     contribution: profit // Contribución absoluta
                 };
-            }).sort((a, b) => b.contribution - a.contribution); // Ordenar por contribución descendente
+            }).filter(c => c.profit !== 0 || c.invested > 0) // Filtrar solo estrategias con actividad
+              .sort((a, b) => b.contribution - a.contribution); // Ordenar por contribución descendente
             
-            const totalProfit = contributions.reduce((sum, c) => sum + c.profit, 0);
+            // Agrupar por moneda para calcular totales
+            const profitsByCurrency = {};
+            contributions.forEach(c => {
+                if (!profitsByCurrency[c.currency]) {
+                    profitsByCurrency[c.currency] = 0;
+                }
+                profitsByCurrency[c.currency] += c.profit;
+            });
             
-            if (contributions.length === 0 || totalProfit === 0 && contributions.every(c => c.profit === 0)) {
+            if (contributions.length === 0) {
                 summaryDiv.style.display = 'none';
                 return;
             }
@@ -414,7 +422,8 @@
                     Desglose de la ganancia/pérdida total por cada estrategia
                 </div>
                 ${contributions.map(c => {
-                    const contributionPct = totalProfit !== 0 ? (c.profit / totalProfit * 100) : 0;
+                    const currencyTotal = profitsByCurrency[c.currency] || 0;
+                    const contributionPct = currencyTotal !== 0 ? (c.profit / currencyTotal * 100) : 0;
                     const itemClass = c.profit > 0 ? 'positive' : (c.profit < 0 ? 'negative' : 'neutral');
                     
                     return `
@@ -432,21 +441,26 @@
                                 <div style="color: #666; font-size: 0.9em;">
                                     ${c.profitPct >= 0 ? '+' : ''}${c.profitPct.toFixed(2)}%
                                 </div>
-                                ${totalProfit !== 0 ? `
+                                ${currencyTotal !== 0 && Math.abs(contributionPct) > 0.1 ? `
                                     <div style="color: #999; font-size: 0.85em;">
-                                        ${contributionPct >= 0 ? '+' : ''}${contributionPct.toFixed(1)}% del total
+                                        ${contributionPct >= 0 ? '+' : ''}${contributionPct.toFixed(1)}% del total ${c.currency}
                                     </div>
                                 ` : ''}
                             </div>
                         </div>
                     `;
                 }).join('')}
-                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #f0f0f0; font-weight: bold; display: flex; justify-content: space-between;">
-                    <span>Total:</span>
-                    <span class="${totalProfit >= 0 ? 'positive' : 'negative'}" style="font-size: 1.2em;">
-                        ${formatCurrency(totalProfit, contributions[0]?.currency || 'EUR')}
-                    </span>
-                </div>
+                ${Object.keys(profitsByCurrency).map(currency => {
+                    const total = profitsByCurrency[currency];
+                    return `
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #f0f0f0; font-weight: bold; display: flex; justify-content: space-between;">
+                            <span>Total ${currency}:</span>
+                            <span class="${total >= 0 ? 'positive' : 'negative'}" style="font-size: 1.2em;">
+                                ${formatCurrency(total, currency)}
+                            </span>
+                        </div>
+                    `;
+                }).join('')}
             `;
         }
 
