@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vercel dev"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "type": "commonjs"
 }
 
