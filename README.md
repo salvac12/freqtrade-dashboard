@@ -37,9 +37,9 @@ Dashboard web desplegado en Vercel para monitorear bots Freqtrade en tiempo real
    - Ve a tu proyecto en Vercel
    - Settings > Environment Variables
    - Añade:
-     - `VPS_IP` = `5.223.53.43`
-     - `FREQTRADE_USERNAME` = `freqtrader`
-     - `FREQTRADE_PASSWORD` = `Salvador2025!`
+     - `VPS_IP` = (tu IP del VPS)
+     - `FREQTRADE_USERNAME` = (tu usuario)
+     - `FREQTRADE_PASSWORD` = (tu contraseña)
 
 6. **Redespliega para aplicar las variables:**
    ```bash
@@ -66,9 +66,9 @@ Dashboard web desplegado en Vercel para monitorear bots Freqtrade en tiempo real
 
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
-| `VPS_IP` | IP del VPS donde están los bots | `5.223.53.43` |
-| `FREQTRADE_USERNAME` | Usuario de FreqUI | `freqtrader` |
-| `FREQTRADE_PASSWORD` | Contraseña de FreqUI | `Salvador2025!` |
+| `VPS_IP` | IP del VPS donde están los bots | (configurar en Vercel) |
+| `FREQTRADE_USERNAME` | Usuario de FreqUI | (configurar en Vercel) |
+| `FREQTRADE_PASSWORD` | Contraseña de FreqUI | (configurar en Vercel) |
 
 ## 🔒 Seguridad
 

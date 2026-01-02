@@ -1,8 +1,15 @@
 // Vercel Serverless Function para obtener datos de todos los bots
 export default async function handler(req, res) {
-  const VPS_IP = process.env.VPS_IP || '5.223.53.43';
-  const USERNAME = process.env.FREQTRADE_USERNAME || 'freqtrader';
-  const PASSWORD = process.env.FREQTRADE_PASSWORD || 'Salvador2025!';
+  const VPS_IP = process.env.VPS_IP;
+  const USERNAME = process.env.FREQTRADE_USERNAME;
+  const PASSWORD = process.env.FREQTRADE_PASSWORD;
+  
+  // Validar que las variables de entorno estén configuradas
+  if (!VPS_IP || !USERNAME || !PASSWORD) {
+    return res.status(500).json({ 
+      error: 'Variables de entorno no configuradas. Configura VPS_IP, FREQTRADE_USERNAME y FREQTRADE_PASSWORD en Vercel.' 
+    });
+  }
   
   const bots = [
     { name: "BollingerV1", exchange: "Kraken", port: 8080 },
