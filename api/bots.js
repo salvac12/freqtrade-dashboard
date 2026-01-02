@@ -1,5 +1,6 @@
 // Vercel Serverless Function para obtener datos de los bots
 // Esta función actúa como proxy entre el dashboard y el VPS
+import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
   // Configuración del VPS (desde variables de entorno)
@@ -34,16 +35,19 @@ export default async function handler(req, res) {
 
   try {
     // Obtener token de autenticación
+    const authString = Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64');
     const authResponse = await fetch(`${baseUrl}/api/v1/token/login`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Basic ' + Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64')
+        'Authorization': `Basic ${authString}`,
+        'Content-Type': 'application/json'
       },
-      timeout: 5000
+      timeout: 10000
     });
 
     if (!authResponse.ok) {
-      throw new Error(`Error de autenticación: ${authResponse.status}`);
+      const errorText = await authResponse.text().catch(() => '');
+      throw new Error(`Error de autenticación: ${authResponse.status} - ${errorText.substring(0, 100)}`);
     }
 
     const authData = await authResponse.json();
@@ -59,13 +63,13 @@ export default async function handler(req, res) {
         headers: {
           'Authorization': `Bearer ${token}`
         },
-        timeout: 5000
+        timeout: 10000
       }),
       fetch(`${baseUrl}/api/v1/status`, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
-        timeout: 5000
+        timeout: 10000
       })
     ]);
 
@@ -146,4 +150,3 @@ export default async function handler(req, res) {
     });
   }
 }
-

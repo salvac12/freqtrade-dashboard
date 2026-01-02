@@ -1,4 +1,6 @@
 // Vercel Serverless Function para obtener datos de todos los bots
+import fetch from 'node-fetch';
+
 export default async function handler(req, res) {
   const VPS_IP = process.env.VPS_IP;
   const USERNAME = process.env.FREQTRADE_USERNAME;
@@ -25,7 +27,6 @@ export default async function handler(req, res) {
         const baseUrl = `http://${VPS_IP}:${bot.port}`;
         
         // Obtener token - usar autenticación básica HTTP
-        // Nota: fetch en Node.js de Vercel puede necesitar node-fetch o usar el formato correcto
         const authString = Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64');
         
         let authResponse;
@@ -34,19 +35,17 @@ export default async function handler(req, res) {
             method: 'POST',
             headers: {
               'Authorization': `Basic ${authString}`,
-              'Content-Type': 'application/json',
-              'User-Agent': 'Freqtrade-Dashboard/1.0'
+              'Content-Type': 'application/json'
             },
-            // Añadir timeout explícito
-            signal: AbortSignal.timeout(10000)
+            timeout: 10000
           });
         } catch (fetchError) {
-          // Si fetch falla, puede ser un problema de red o timeout
           throw new Error(`Error de conexión: ${fetchError.message}`);
         }
 
         if (!authResponse.ok) {
-          throw new Error(`Error de autenticación: ${authResponse.status}`);
+          const errorText = await authResponse.text().catch(() => '');
+          throw new Error(`Error de autenticación: ${authResponse.status} - ${errorText.substring(0, 100)}`);
         }
 
         const authData = await authResponse.json();
@@ -59,10 +58,12 @@ export default async function handler(req, res) {
         // Obtener trades y status
         const [tradesResponse, statusResponse] = await Promise.all([
           fetch(`${baseUrl}/api/v1/trades`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${token}` },
+            timeout: 10000
           }),
           fetch(`${baseUrl}/api/v1/status`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${token}` },
+            timeout: 10000
           })
         ]);
 
@@ -73,7 +74,7 @@ export default async function handler(req, res) {
         const trades = await tradesResponse.json();
         const status = await statusResponse.json();
 
-        // Procesar datos (mismo código que en bots.js)
+        // Procesar datos
         const tradesList = Array.isArray(trades) ? trades : (trades.trades || []);
         const openTrades = tradesList.filter(t => t.is_open);
         const closedTrades = tradesList.filter(t => !t.is_open);
@@ -133,6 +134,7 @@ export default async function handler(req, res) {
           }
         };
       } catch (error) {
+        console.error(`Error en ${bot.name}:`, error.message);
         return {
           bot: bot.name,
           exchange: bot.exchange,
@@ -173,4 +175,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
-
