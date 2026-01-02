@@ -111,14 +111,26 @@ export default async function handler(req, res) {
         const totalProfit = closedTrades.reduce((sum, t) => sum + (t.profit_abs || 0), 0);
         const totalProfitPct = closedTrades.reduce((sum, t) => sum + (t.profit_pct || 0), 0);
         
-        // Calcular capital invertido (suma de stake_amount de todos los trades cerrados)
-        const totalInvested = closedTrades.reduce((sum, t) => sum + (t.stake_amount || 0), 0);
+        // Calcular capital invertido
+        // Si stake_amount no está disponible, calcularlo como open_trade_value o amount * open_rate
+        const totalInvested = closedTrades.reduce((sum, t) => {
+          let stake = t.stake_amount;
+          if (!stake || stake === 0) {
+            // Intentar calcular desde open_trade_value
+            stake = t.open_trade_value;
+            if (!stake || stake === 0) {
+              // Calcular desde amount * open_rate
+              stake = (t.amount || 0) * (t.open_rate || 0);
+            }
+          }
+          return sum + (stake || 0);
+        }, 0);
         
         // Obtener la moneda stake (EUR, USDT, etc.) del primer trade o usar 'EUR' por defecto
         const stakeCurrency = closedTrades.length > 0 
-          ? (closedTrades[0].stake_currency || closedTrades[0].quote_currency || 'EUR')
+          ? (closedTrades[0].stake_currency || closedTrades[0].quote_currency || closedTrades[0].currency || 'EUR')
           : (openTrades.length > 0 
-            ? (openTrades[0].stake_currency || openTrades[0].quote_currency || 'EUR')
+            ? (openTrades[0].stake_currency || openTrades[0].quote_currency || openTrades[0].currency || 'EUR')
             : 'EUR');
 
         const winningTrades = closedTrades.filter(t => (t.profit_abs || 0) > 0);
