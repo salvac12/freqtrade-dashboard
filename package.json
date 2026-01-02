@@ -6,6 +6,6 @@
     "dev": "vercel dev"
   },
   "dependencies": {},
-  "type": "commonjs"
+  "type": "module"
 }
 

@@ -1,7 +1,7 @@
 // Vercel Serverless Function para obtener datos de los bots
 // Esta función actúa como proxy entre el dashboard y el VPS
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Configuración del VPS (desde variables de entorno)
   const VPS_IP = process.env.VPS_IP;
   const USERNAME = process.env.FREQTRADE_USERNAME;

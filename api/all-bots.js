@@ -1,5 +1,5 @@
 // Vercel Serverless Function para obtener datos de todos los bots
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const VPS_IP = process.env.VPS_IP;
   const USERNAME = process.env.FREQTRADE_USERNAME;
   const PASSWORD = process.env.FREQTRADE_PASSWORD;
