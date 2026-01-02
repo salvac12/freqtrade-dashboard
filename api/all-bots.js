@@ -110,6 +110,16 @@ export default async function handler(req, res) {
 
         const totalProfit = closedTrades.reduce((sum, t) => sum + (t.profit_abs || 0), 0);
         const totalProfitPct = closedTrades.reduce((sum, t) => sum + (t.profit_pct || 0), 0);
+        
+        // Calcular capital invertido (suma de stake_amount de todos los trades cerrados)
+        const totalInvested = closedTrades.reduce((sum, t) => sum + (t.stake_amount || 0), 0);
+        
+        // Obtener la moneda stake (EUR, USDT, etc.) del primer trade o usar 'EUR' por defecto
+        const stakeCurrency = closedTrades.length > 0 
+          ? (closedTrades[0].stake_currency || closedTrades[0].quote_currency || 'EUR')
+          : (openTrades.length > 0 
+            ? (openTrades[0].stake_currency || openTrades[0].quote_currency || 'EUR')
+            : 'EUR');
 
         const winningTrades = closedTrades.filter(t => (t.profit_abs || 0) > 0);
         const losingTrades = closedTrades.filter(t => (t.profit_abs || 0) < 0);
@@ -155,6 +165,8 @@ export default async function handler(req, res) {
           summary: {
             totalProfit,
             totalProfitPct,
+            totalInvested,
+            stakeCurrency,
             winRate,
             winningTrades: winningTrades.length,
             losingTrades: losingTrades.length,

@@ -136,7 +136,7 @@
 
         .bot-metrics {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -279,6 +279,7 @@
         <div id="content" style="display: none;">
             <div class="stats-grid" id="stats-grid"></div>
             <div class="bot-grid" id="bot-grid"></div>
+            <div class="contribution-summary" id="contribution-summary" style="display: none;"></div>
             <div class="last-update" id="last-update"></div>
         </div>
     </div>
@@ -309,10 +310,13 @@
                 const { bots, global } = data;
 
                 // Renderizar estadísticas globales
-                renderGlobalStats(global);
+                renderGlobalStats(global, bots);
 
                 // Renderizar bots
                 renderBots(bots);
+                
+                // Renderizar resumen de contribución por estrategia
+                renderContributionSummary(bots);
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
@@ -327,25 +331,42 @@
             }
         }
 
-        function renderGlobalStats(stats) {
+        function formatCurrency(amount, currency = 'EUR') {
+            return new Intl.NumberFormat('es-ES', {
+                style: 'currency',
+                currency: currency === 'USDT' ? 'USD' : currency,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        function renderGlobalStats(stats, bots) {
             const statsGrid = document.getElementById('stats-grid');
+            
+            // Calcular totales
+            const totalInvested = bots.reduce((sum, b) => sum + (b.summary?.totalInvested || 0), 0);
+            const totalProfit = stats.totalProfit || 0;
+            const stakeCurrency = bots.find(b => b.summary?.stakeCurrency)?.summary?.stakeCurrency || 'EUR';
+            
             statsGrid.innerHTML = `
                 <div class="stat-card">
                     <h3>Total de Trades</h3>
                     <div class="value">${stats.totalTrades}</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Trades Abiertos</h3>
-                    <div class="value">${stats.totalOpen}</div>
+                    <h3>Capital Invertido</h3>
+                    <div class="value">${formatCurrency(totalInvested, stakeCurrency)}</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Trades Cerrados</h3>
-                    <div class="value">${stats.totalClosed}</div>
+                    <h3>Ganancia Total</h3>
+                    <div class="value ${totalProfit >= 0 ? 'positive' : 'negative'}">
+                        ${formatCurrency(totalProfit, stakeCurrency)}
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <h3>Profit Total</h3>
-                    <div class="value ${stats.totalProfit >= 0 ? 'positive' : 'negative'}">
-                        ${formatProfit(stats.totalProfit, stats.totalProfitPct)}
+                    <h3>Profit Total (%)</h3>
+                    <div class="value ${stats.totalProfitPct >= 0 ? 'positive' : 'negative'}">
+                        ${stats.totalProfitPct >= 0 ? '+' : ''}${stats.totalProfitPct.toFixed(2)}%
                     </div>
                 </div>
                 <div class="stat-card">
@@ -353,6 +374,78 @@
                     <div class="value ${stats.globalWinRate >= 50 ? 'positive' : 'negative'}">
                         ${stats.globalWinRate.toFixed(1)}%
                     </div>
+                </div>
+            `;
+        }
+
+        function renderContributionSummary(botData) {
+            const summaryDiv = document.getElementById('contribution-summary');
+            
+            // Calcular contribución de cada estrategia
+            const contributions = botData.map(bot => {
+                const summary = bot.summary || {};
+                const profit = summary.totalProfit || 0;
+                const profitPct = summary.totalProfitPct || 0;
+                const invested = summary.totalInvested || 0;
+                const currency = summary.stakeCurrency || 'EUR';
+                
+                return {
+                    name: bot.bot,
+                    exchange: bot.exchange,
+                    profit,
+                    profitPct,
+                    invested,
+                    currency,
+                    contribution: profit // Contribución absoluta
+                };
+            }).sort((a, b) => b.contribution - a.contribution); // Ordenar por contribución descendente
+            
+            const totalProfit = contributions.reduce((sum, c) => sum + c.profit, 0);
+            
+            if (contributions.length === 0 || totalProfit === 0 && contributions.every(c => c.profit === 0)) {
+                summaryDiv.style.display = 'none';
+                return;
+            }
+            
+            summaryDiv.style.display = 'block';
+            summaryDiv.innerHTML = `
+                <h2>📊 Contribución por Estrategia</h2>
+                <div style="margin-bottom: 15px; color: #666; font-size: 0.9em;">
+                    Desglose de la ganancia/pérdida total por cada estrategia
+                </div>
+                ${contributions.map(c => {
+                    const contributionPct = totalProfit !== 0 ? (c.profit / totalProfit * 100) : 0;
+                    const itemClass = c.profit > 0 ? 'positive' : (c.profit < 0 ? 'negative' : 'neutral');
+                    
+                    return `
+                        <div class="contribution-item ${itemClass}">
+                            <div>
+                                <div class="contribution-name">${c.name}</div>
+                                <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
+                                    ${c.exchange} | Invertido: ${formatCurrency(c.invested, c.currency)}
+                                </div>
+                            </div>
+                            <div class="contribution-details">
+                                <div class="contribution-value ${itemClass}">
+                                    ${formatCurrency(c.profit, c.currency)}
+                                </div>
+                                <div style="color: #666; font-size: 0.9em;">
+                                    ${c.profitPct >= 0 ? '+' : ''}${c.profitPct.toFixed(2)}%
+                                </div>
+                                ${totalProfit !== 0 ? `
+                                    <div style="color: #999; font-size: 0.85em;">
+                                        ${contributionPct >= 0 ? '+' : ''}${contributionPct.toFixed(1)}% del total
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #f0f0f0; font-weight: bold; display: flex; justify-content: space-between;">
+                    <span>Total:</span>
+                    <span class="${totalProfit >= 0 ? 'positive' : 'negative'}" style="font-size: 1.2em;">
+                        ${formatCurrency(totalProfit, contributions[0]?.currency || 'EUR')}
+                    </span>
                 </div>
             `;
         }
@@ -378,9 +471,21 @@
                         
                         <div class="bot-metrics">
                             <div class="metric">
-                                <div class="metric-label">Plusvalía</div>
+                                <div class="metric-label">Capital Invertido</div>
+                                <div class="metric-value">
+                                    ${formatCurrency(summary.totalInvested || 0, summary.stakeCurrency || 'EUR')}
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Ganancia (${summary.stakeCurrency || 'EUR'})</div>
                                 <div class="metric-value ${summary.totalProfit >= 0 ? 'positive' : 'negative'}">
-                                    ${formatProfit(summary.totalProfit || 0, summary.totalProfitPct || 0)}
+                                    ${formatCurrency(summary.totalProfit || 0, summary.stakeCurrency || 'EUR')}
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Rentabilidad (%)</div>
+                                <div class="metric-value ${summary.totalProfitPct >= 0 ? 'positive' : 'negative'}">
+                                    ${summary.totalProfitPct >= 0 ? '+' : ''}${(summary.totalProfitPct || 0).toFixed(2)}%
                                 </div>
                             </div>
                             <div class="metric">
