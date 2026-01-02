@@ -24,11 +24,13 @@ export default async function handler(req, res) {
       try {
         const baseUrl = `http://${VPS_IP}:${bot.port}`;
         
-        // Obtener token
+        // Obtener token - usar autenticación básica HTTP
+        const authString = Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64');
         const authResponse = await fetch(`${baseUrl}/api/v1/token/login`, {
           method: 'POST',
           headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64')
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/json'
           }
         });
 
